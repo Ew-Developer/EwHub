@@ -50,11 +50,11 @@ local Games = {
         local Godmode = false
 
         local CanLoadCharacter = false
-        local LastCf = Player.Character.PrimaryPart.CFrame
-        local LastCamCf = Workspace.CurrentCamera.CFrame
+        local LastCf = CFrame.new()
+        local LastCamCf = CFrame.new()
 
         local function ModItem(v)
-            repeat RunService.RenderStepped:Wait() until Player.Character:FindFirstChild(v) or Player:WaitForChild("Backpack"):FindFirstChild(v)
+            repeat RunService.RenderStepped:Wait() until Player.Character and (Player.Character:FindFirstChild(v) or Player:WaitForChild("Backpack"):FindFirstChild(v))
             if Player.Character:FindFirstChild(v) then
                 module = Player.Character:FindFirstChild(v):FindFirstChild("GunStates")
             elseif Player:WaitForChild("Backpack"):FindFirstChild(v) then
@@ -78,7 +78,7 @@ local Games = {
             if CanLoadCharacter == false then
                 local cf = LastCf
                 local ccf = LastCamCf
-                repeat RunService.RenderStepped:Wait() until Player.Character.Parent == Workspace
+                repeat RunService.RenderStepped:Wait() until Player.Character and Player.Character.Parent == Workspace
                 for i = 1,3 do RunService.RenderStepped:Wait() end
                 Player.Character:SetPrimaryPartCFrame(cf)
                 Workspace.CurrentCamera.CFrame = ccf
@@ -93,7 +93,7 @@ local Games = {
                 local ccf = Workspace.CurrentCamera.CFrame
                 task.spawn(function()
                     Player.CharacterAdded:Wait()
-                    repeat RunService.RenderStepped:Wait() until Player.Character.Parent == Workspace
+                    repeat RunService.RenderStepped:Wait() until Player.Character and Player.Character.Parent == Workspace
                     for i = 1,3 do RunService.RenderStepped:Wait() end
                     Player.Character:SetPrimaryPartCFrame(cf)
                     Workspace.CurrentCamera.CFrame = ccf
@@ -135,8 +135,10 @@ local Games = {
         end
 
         RunService.RenderStepped:Connect(function()
-            LastCf = Player.Character.PrimaryPart.CFrame
-            LastCamCf = Workspace.CurrentCamera.CFrame
+            pcall(function()
+                LastCf = Player.Character.PrimaryPart.CFrame
+                LastCamCf = Workspace.CurrentCamera.CFrame
+            end)
 
             if AutoReload then
                 local module = nil
