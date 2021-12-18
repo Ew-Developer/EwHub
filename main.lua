@@ -49,7 +49,7 @@ local Games = {
         local AutoMod = false
         local Godmode = false
 
-        local CanLoadCharacter = false
+        local CanLoadCharacter = true
         local LastCf = CFrame.new()
         local LastCamCf = CFrame.new()
 
