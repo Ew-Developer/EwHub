@@ -223,11 +223,15 @@ do
             if _G.EwHubTelepoting then return end
             _G.EwHubTelepoting = true
 
-            local queueteleport = syn and syn.queue_on_teleport or queue_on_teleport or fluxus and fluxus.queue_on_teleport
-	        if queueteleport then
-                queueteleport(game:HttpGet(""))
-            end
-            game:GetService("TeleportService"):Teleport(id,Player)
+            xpcall(function()
+                local queueteleport = syn and syn.queue_on_teleport or queue_on_teleport or fluxus and fluxus.queue_on_teleport
+                if queueteleport then
+                    queueteleport([[loadstring(game:HttpGet("https://raw.githubusercontent.com/Ew-Developer/EwHub/main/main.lua"))()]])
+                end
+                game:GetService("TeleportService"):Teleport(id,Player)
+            end,function()
+                _G.EwHubTelepoting = false
+            end)
         end)
     end
 end
