@@ -1,3 +1,5 @@
+if not game:IsLoaded() then game.Loaded:Wait() end task.wait(1)
+
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
