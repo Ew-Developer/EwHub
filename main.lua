@@ -1,4 +1,4 @@
-if not game:IsLoaded() then game.Loaded:Wait() end task.wait(1)
+if not game:IsLoaded() then game.Loaded:Wait() end task.wait(5)
 
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
@@ -29,6 +29,8 @@ local Games = {
     [155615604] = {"Prison Life",function()
         local Items = {"M9","Remington 870","AK-47","M4A1","Riot Shield"}
         local Guns = {"M9","Remington 870","AK-47","M4A1"}
+        local Teams = {"Guard","Inmate","Criminal","Neutral"}
+
         Teleports = {
             {"Cafeteria",CFrame.new(879,99,2247)};
             {"Kitchen",CFrame.new(912.483459, 99.9899597, 2226.25342)};
@@ -49,11 +51,15 @@ local Games = {
 
         local AutoReload = false
         local AutoMod = false
+        local AutoLoadout = false
         local Godmode = false
+        local LockTeam = false
 
         local CanLoadCharacter = true
         local LastCf = CFrame.new()
         local LastCamCf = CFrame.new()
+        local LastTeam = ""
+        local CanSetTeam = true
 
         local function ModItem(v)
             repeat RunService.RenderStepped:Wait() until Player.Character and (Player.Character:FindFirstChild(v) or Player:WaitForChild("Backpack"):FindFirstChild(v))
@@ -75,15 +81,66 @@ local Games = {
                 module.Bullets = 10
             end
         end
+        local function Loadout()
+            local Backpack = Player:WaitForChild("Backpack")
 
+            for _,v in ipairs(Items) do
+                if v ~= "M4A1" and v ~= "Riot Shield" then
+                    if Player.Character and not Backpack:FindFirstChild(v) or not Player.Character:FindFirstChild(v) then
+                        Workspace:WaitForChild("Remote"):WaitForChild("ItemHandler"):InvokeServer(Workspace:WaitForChild("Prison_ITEMS"):WaitForChild("giver"):WaitForChild(v):WaitForChild("ITEMPICKUP"))
+            
+                        if AutoMod then
+                            ModItem(v)
+                        end
+                    end
+                end
+            end
+        end
+        local function SetTeam(v)
+            CanSetTeam = false
+            if v == "Criminal" and Player.Character then
+                local cf = Player.Character.PrimaryPart.CFrame
+                repeat
+                    Player.Character:SetPrimaryPartCFrame(CFrame.new(-920.950195, 95.327179, 2131.98975))
+                    RunService.RenderStepped:Wait()
+                until tostring(Player.TeamColor) == "Really red"
+                Player.Character:SetPrimaryPartCFrame(cf)
+                CanSetTeam = true
+            else
+                local Color = nil
+                if v == "Guard" then
+                    Color = "Bright blue"
+                elseif v == "Inmate" then
+                    Color = "Bright orange"
+                elseif v == "Neutral" then
+                    Color = "Medium stone grey"
+                end
+                
+                if Color then
+                    Workspace:WaitForChild("Remote"):WaitForChild("TeamEvent"):FireServer(Color)
+                    repeat
+                        RunService.RenderStepped:Wait()
+                    until tostring(Player.TeamColor) == Color
+                    CanSetTeam = true
+                end
+            end
+        end
         local function SetupCharacter(Character)
-            if CanLoadCharacter == false then
-                local cf = LastCf
-                local ccf = LastCamCf
-                repeat RunService.RenderStepped:Wait() until Player.Character and Player.Character.Parent == Workspace
-                for i = 1,3 do RunService.RenderStepped:Wait() end
+            CanSetTeam = false
+
+            local cf = LastCf
+            local ccf = LastCamCf
+            repeat RunService.RenderStepped:Wait() until Player.Character and Player.Character.Parent == Workspace
+            RunService.RenderStepped:Wait()
+
+            if AutoLoadout then
+                Loadout()
+            end
+            if not CanLoadCharacter and Godmode then
                 Player.Character:SetPrimaryPartCFrame(cf)
                 Workspace.CurrentCamera.CFrame = ccf
+            else
+                CanSetTeam = true
             end
             CanLoadCharacter = false
 
@@ -96,7 +153,7 @@ local Games = {
                 task.spawn(function()
                     Player.CharacterAdded:Wait()
                     repeat RunService.RenderStepped:Wait() until Player.Character and Player.Character.Parent == Workspace
-                    for i = 1,3 do RunService.RenderStepped:Wait() end
+                    RunService.RenderStepped:Wait()
                     Player.Character:SetPrimaryPartCFrame(cf)
                     Workspace.CurrentCamera.CFrame = ccf
                 end)
@@ -115,6 +172,20 @@ local Games = {
                 Godmode = v
             end)
 
+            local TeamSettings = TeamsTab:NewSection("Set team")
+            TeamSettings:NewToggle("Lock team","Toggles lock team",function(v)
+                LockTeam = v
+                if not LockTeam then
+                    LastTeam = ""
+                end
+            end)
+
+            local SetTeam = TeamsTab:NewSection("Set team")
+            SetTeam:NewDropdown("...","Sets your team",Teams,function(v)
+                SetTeam(v)
+                LastTeam = v
+            end)
+
             local ItemsSettings = ItemsTab:NewSection("Settings")
             ItemsSettings:NewToggle("Auto reload","Toggles auto reload",function(v)
                 AutoReload = v
@@ -122,10 +193,17 @@ local Games = {
             ItemsSettings:NewToggle("Auto mod","Toggles auto item mod",function(v)
                 AutoMod = v
             end)
+            ItemsSettings:NewToggle("Auto loadout","Toggles auto loadout",function(v)
+                AutoLoadout = v
+            end)
 
             local GiveItem = ItemsTab:NewSection("Give item")
             GiveItem:NewDropdown("...","Gives you an item",Items,function(v)
                 Workspace:WaitForChild("Remote"):WaitForChild("ItemHandler"):InvokeServer(Workspace:WaitForChild("Prison_ITEMS"):WaitForChild("giver"):WaitForChild(v):WaitForChild("ITEMPICKUP"))
+            
+                if AutoMod then
+                    ModItem(v)
+                end
             end)
 
             local ModItem = ItemsTab:NewSection("Mod item")
@@ -158,10 +236,30 @@ local Games = {
                     end
                 end
             end
+            if LockTeam and LastTeam ~= "" and CanSetTeam then
+                local Color = nil
+                if LastTeam == "Guard" then
+                    Color = "Bright blue"
+                elseif LastTeam == "Inmate" then
+                    Color = "Bright orange"
+                elseif LastTeam == "Criminal" then
+                    Color = "Really red"
+                elseif LastTeam == "Neutral" then
+                    Color = "Medium stone grey"
+                end
+
+                if Color then
+                    if tostring(Player.TeamColor) ~= Color then
+                        SetTeam(LastTeam)
+                    end
+                end
+            end
         end)
-        Player:WaitForChild("Backpack").ChildAdded:Connect(function(c)
-            if AutoMod then
-                ModItem(c.Name)
+        task.spawn(function()
+            while RunService.RenderStepped:Wait() do
+                if AutoLoadout then
+                    Loadout()
+                end
             end
         end)
 
