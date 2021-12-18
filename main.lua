@@ -139,8 +139,6 @@ local Games = {
             if not CanLoadCharacter and Godmode then
                 Player.Character:SetPrimaryPartCFrame(cf)
                 Workspace.CurrentCamera.CFrame = ccf
-            else
-                CanSetTeam = true
             end
             CanLoadCharacter = false
 
@@ -160,6 +158,9 @@ local Games = {
                 CanLoadCharacter = true
                 Workspace:WaitForChild("Remote"):WaitForChild("loadchar"):InvokeServer()
             end)
+
+            RunService.RenderStepped:Wait()
+            CanSetTeam = true
         end
 
         do
