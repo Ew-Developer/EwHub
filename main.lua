@@ -180,8 +180,8 @@ local Games = {
                 end
             end)
 
-            local SetTeam = TeamsTab:NewSection("Set team")
-            SetTeam:NewDropdown("...","Sets your team",Teams,function(v)
+            local SetTeamSection = TeamsTab:NewSection("Set team")
+            SetTeamSection:NewDropdown("...","Sets your team",Teams,function(v)
                 SetTeam(v)
                 LastTeam = v
             end)
