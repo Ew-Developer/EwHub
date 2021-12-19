@@ -312,8 +312,8 @@ local Games = {
         TeleportMethod = "Instant"
 
         Teleports = {
-            {"Lobby",CFrame.new(-308.988312, 181.070328, 311.300873)};
-            {"Island",CFrame.new(-115.674156, 48.883625, 12.5218096)};
+            {"Lobby",CFrame.new(-308.98831176758, 179.59996032715, 311.30087280273)};
+            {"Island",CFrame.new(-115.67415618896, 47.399990081787, 12.521809577942)};
         }
 
         local AutoWin = false
@@ -328,11 +328,8 @@ local Games = {
 
         RunService.RenderStepped:Connect(function()
             if AutoWin and Player.Character and GetRoot() then
-                GetRoot().CFrame = CFrame.new(-308.988312, 181.070328, 311.300873)
+                GetRoot().CFrame = CFrame.new(-308.98831176758, 179.59996032715, 311.30087280273)
                 local h = Player.Character:FindFirstChildOfClass("Humanoid")
-                if h then
-                    h:ChangeState(11)
-                end
             end
         end)
     end};
