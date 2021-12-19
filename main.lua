@@ -31,7 +31,7 @@ local TeleportMethods = {
 local TeleportMethod = TeleportMethods[1]
 
 function GetRoot()
-    return Player.Character ~= nil and Player.Character:FindFirstChild("HumanoidRootPart") or Player.Character:FindFirstChild("Head") or Player.Character:FindFirstChildWichIsA("BasePart",true) or nil
+    return Player.Character ~= nil and Player.Character:FindFirstChild("HumanoidRootPart") or Player.Character:FindFirstChild("Head") or Player.Character:FindFirstChildWhichIsA("BasePart",true) or nil
 end
 
 local Games = {
