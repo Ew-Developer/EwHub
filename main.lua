@@ -24,9 +24,20 @@ for t,c in pairs(DefaultTheme) do
 end
 
 local Teleports = {}
+local TeleportMethods = {
+    "Instant";
+    "Smooth";
+}
+local TeleportMethod = TeleportMethods[1]
+
+function GetRoot()
+    return Player.Character ~= nil and Player.Character:FindFirstChild("HumanoidRootPart") or Player.Character:FindFirstChild("Head") or Player.Character:FindFirstChildWichIsA("BasePart",true) or nil
+end
 
 local Games = {
     [155615604] = {"Prison Life",function()
+        TeleportMethod = "Instant"
+
         local Items = {"M9","Remington 870","AK-47","M4A1","Riot Shield"}
         local Guns = {"M9","Remington 870","AK-47","M4A1"}
         local Teams = {"Guard","Inmate","Criminal","Neutral"}
@@ -39,9 +50,12 @@ local Games = {
             {"Sewer",CFrame.new(916.682983, 78.7001114, 2429.14038)};
             {"Sewer Exit",CFrame.new(916.427979, 99.1453247, 2104.39771)};
             {"Prison Entrance",CFrame.new(657.258972, 99.9900055, 2272.45728)};
+            {"Prison Roof",CFrame.new(867.751953125, 132.72369384766, 2344.3820800781)};
             {"Prison Garage",CFrame.new(616.198975, 98.2000275, 2505.71753)};
             {"Prison Outside",CFrame.new(447.661346, 98.0399399, 2217.46802)};
             {"Prison Back",CFrame.new(797.761169, 98.1900101, 2184.80664)};
+            {"Police Room",CFrame.new(838.23413085938, 99.98998260498, 2265.1125488281)};
+            {"Police Room Entrance",CFrame.new(821.26629638672, 99.98998260498, 2353.2700195312)};
             {"Criminal Base",CFrame.new(-888.868408, 94.1270523, 2133.46558)};
             {"Gas Station",CFrame.new(-503.193329, 54.3937874, 1678.29175)};
             {"Armory",CFrame.new(403.913788, 11.8253431, 1164.46436)};
@@ -99,12 +113,12 @@ local Games = {
         local function SetTeam(v)
             CanSetTeam = false
             if v == "Criminal" and Player.Character then
-                local cf = Player.Character.PrimaryPart.CFrame
+                local cf = GetRoot().CFrame
                 repeat
-                    Player.Character:SetPrimaryPartCFrame(CFrame.new(-920.950195, 95.327179, 2131.98975))
+                    GetRoot().CFrame = CFrame.new(-920.950195, 95.327179, 2131.98975)
                     RunService.RenderStepped:Wait()
                 until tostring(Player.TeamColor) == "Really red"
-                Player.Character:SetPrimaryPartCFrame(cf)
+                GetRoot().CFrame = cf
                 CanSetTeam = true
             else
                 local Color = nil
@@ -120,12 +134,14 @@ local Games = {
                     Workspace:WaitForChild("Remote"):WaitForChild("TeamEvent"):FireServer(Color)
                     repeat
                         RunService.RenderStepped:Wait()
-                    until tostring(Player.TeamColor) == Color
+                    until Player.TeamColor.Name == Color
                     CanSetTeam = true
                 end
             end
         end
+        local LastRespawn = tick()
         local function SetupCharacter(Character)
+            LastRespawn = tick()
             CanSetTeam = false
 
             local cf = LastCf
@@ -137,7 +153,7 @@ local Games = {
                 Loadout()
             end
             if not CanLoadCharacter and Godmode then
-                Player.Character:SetPrimaryPartCFrame(cf)
+                GetRoot().CFrame = cf
                 Workspace.CurrentCamera.CFrame = ccf
             end
             CanLoadCharacter = false
@@ -146,13 +162,13 @@ local Games = {
             Humanoid.Died:Connect(function()
                 if not Godmode then return end
 
-                local cf = Character.PrimaryPart.CFrame
+                local cf = GetRoot().CFrame
                 local ccf = Workspace.CurrentCamera.CFrame
                 task.spawn(function()
                     Player.CharacterAdded:Wait()
                     repeat RunService.RenderStepped:Wait() until Player.Character and Player.Character.Parent == Workspace
                     RunService.RenderStepped:Wait()
-                    Player.Character:SetPrimaryPartCFrame(cf)
+                    GetRoot().CFrame = cf
                     Workspace.CurrentCamera.CFrame = ccf
                 end)
                 CanLoadCharacter = true
@@ -186,6 +202,27 @@ local Games = {
                 SetTeam(v)
                 LastTeam = v
             end)
+            local NewTeamColor = Player.TeamColor.Color
+            SetTeamSection:NewColorPicker("Team color","Changes your team color",Player.TeamColor.Color,function(color3)
+                NewTeamColor = color3
+            end)
+            SetTeamSection:NewButton("Apply team color","Applies your custom team color",function()
+                local NewTeamName = BrickColor.new(NewTeamColor).Name
+                if Player.TeamColor.Name ~= NewTeamName and Player.Character then
+                    local cf = GetRoot().CFrame
+                    local ccf = Workspace.CurrentCamera.CFrame
+                    task.spawn(function()
+                        Player.CharacterAdded:Wait()
+                        repeat RunService.RenderStepped:Wait() until Player.Character and Player.Character.Parent == Workspace
+                        RunService.RenderStepped:Wait()
+                        GetRoot().CFrame = cf
+                        Workspace.CurrentCamera.CFrame = ccf
+                    end)
+                    CanLoadCharacter = true
+                    Workspace:WaitForChild("Remote"):WaitForChild("loadchar"):InvokeServer(nil,NewTeamName)
+                end
+            end)
+
 
             local ItemsSettings = ItemsTab:NewSection("Settings")
             ItemsSettings:NewToggle("Auto reload","Toggles auto reload",function(v)
@@ -207,8 +244,8 @@ local Games = {
                 end
             end)
 
-            local ModItem = ItemsTab:NewSection("Mod item")
-            ModItem:NewDropdown("...","Mods an item",Guns,function(v)
+            local ModItemSection = ItemsTab:NewSection("Mod item")
+            ModItemSection:NewDropdown("...","Mods an item",Guns,function(v)
                 local module = nil
 
                 ModItem(v)
@@ -217,7 +254,7 @@ local Games = {
 
         RunService.RenderStepped:Connect(function()
             pcall(function()
-                LastCf = Player.Character.PrimaryPart.CFrame
+                LastCf = GetRoot().CFrame
                 LastCamCf = Workspace.CurrentCamera.CFrame
             end)
 
@@ -237,24 +274,6 @@ local Games = {
                     end
                 end
             end
-            if LockTeam and LastTeam ~= "" and CanSetTeam then
-                local Color = nil
-                if LastTeam == "Guard" then
-                    Color = "Bright blue"
-                elseif LastTeam == "Inmate" then
-                    Color = "Bright orange"
-                elseif LastTeam == "Criminal" then
-                    Color = "Really red"
-                elseif LastTeam == "Neutral" then
-                    Color = "Medium stone grey"
-                end
-
-                if Color then
-                    if tostring(Player.TeamColor) ~= Color then
-                        SetTeam(LastTeam)
-                    end
-                end
-            end
         end)
         task.spawn(function()
             while RunService.RenderStepped:Wait() do
@@ -263,10 +282,60 @@ local Games = {
                 end
             end
         end)
+        task.spawn(function()
+            while wait(1) do
+                if LockTeam and LastTeam ~= "" and CanSetTeam and tick() - LastRespawn >= 1 then
+                    local Color = nil
+                    if LastTeam == "Guard" then
+                        Color = "Bright blue"
+                    elseif LastTeam == "Inmate" then
+                        Color = "Bright orange"
+                    elseif LastTeam == "Criminal" then
+                        Color = "Really red"
+                    elseif LastTeam == "Neutral" then
+                        Color = "Medium stone grey"
+                    end
+    
+                    if Color then
+                        if Player.TeamColor.Name ~= Color then
+                            SetTeam(LastTeam)
+                        end
+                    end
+                end
+            end
+        end)
 
         Player.CharacterAdded:Connect(SetupCharacter)
         SetupCharacter(Player.Character)
-    end}
+    end};
+    [189707] = {"Natural Disasters",function()
+        TeleportMethod = "Instant"
+
+        Teleports = {
+            {"Lobby",CFrame.new(-308.988312, 181.070328, 311.300873)};
+            {"Island",CFrame.new(-115.674156, 48.883625, 12.5218096)};
+        }
+
+        local AutoWin = false
+
+        do
+            local GameTab = Window:NewTab("Game")
+            local GameSettings = GameTab:NewSection("Settings")
+            GameSettings:NewToggle("Auto win","Toggles auto win",function(v)
+                AutoWin = v
+            end)
+        end
+
+        RunService.RenderStepped:Connect(function()
+            if AutoWin and Player.Character and GetRoot() then
+                GetRoot().CFrame = CFrame.new(-308.988312, 181.070328, 311.300873)
+                local h = Player.Character:FindFirstChildOfClass("Humanoid")
+                if h then
+                    h:ChangeState(11)
+                end
+            end
+        end)
+    end};
 }
 
 Window = Library.CreateLib("Ew Hub - "..(Games[game.PlaceId] and Games[game.PlaceId][1] or "Unsupported game"),Theme)
@@ -276,24 +345,18 @@ do
     if #Teleports > 0 then
         local TeleportTab = Window:NewTab("Teleport")
 
-        local Methods = {
-            "Instant";
-            "Smooth";
-        }
-        local Method = Methods[1]
-
-        local TeleportMethod = TeleportTab:NewSection("Teleport method")
-        TeleportMethod:NewDropdown(Method,"Sets your teleport method",Methods,function(m)
-            Method = m
+        local TeleportMethodSection = TeleportTab:NewSection("Teleport method")
+        TeleportMethodSection:NewDropdown(TeleportMethod,"Sets your teleport method",TeleportMethods,function(m)
+            TeleportMethod = m
         end)
 
         local TeleportsSection = TeleportTab:NewSection("Teleports")
         for _,d in ipairs(Teleports) do
             TeleportsSection:NewButton(d[1],"Teleports you to "..string.lower(d[1]),function()
-                if Method == "Instant" then
-                    Player.Character:SetPrimaryPartCFrame(d[2])
-                elseif Method == "Smooth" then
-                    TweenService:Create(Player.Character.PrimaryPart,TweenInfo.new(3,Enum.EasingStyle.Linear,Enum.EasingDirection.Out),{CFrame = d[2]}):Play()
+                if TeleportMethod == "Instant" then
+                    GetRoot().CFrame = d[2]
+                elseif TeleportMethod == "Smooth" then
+                    TweenService:Create(GetRoot(),TweenInfo.new((GetRoot().Position - d[2].Position).Magnitude / 100,Enum.EasingStyle.Linear,Enum.EasingDirection.Out),{CFrame = d[2]}):Play()
                 end
             end)
         end
